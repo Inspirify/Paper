@@ -39,10 +39,10 @@
 
 /* Begin PBXFileReference section */
 		04C22CC5D8314E67A4CAC349 /* Pods-Paper.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Paper.xcconfig"; path = "Pods/Pods-Paper.xcconfig"; sourceTree = "<group>"; };
-		18D62FECA50048F0A02882CB /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
-		30061488AE9540B899968C17 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
+		18D62FECA50048F0A02882CB /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../../LICENSE; sourceTree = "<group>"; };
+		30061488AE9540B899968C17 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../../README.md; sourceTree = "<group>"; };
 		40D252BBD0AC4DFCB5E27E18 /* Pods-Tests.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.xcconfig"; path = "Pods/Pods-Tests.xcconfig"; sourceTree = "<group>"; };
-		50F92FC38FC14D309455E30C /* Paper.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = Paper.podspec; path = ../Paper.podspec; sourceTree = "<group>"; };
+		50F92FC38FC14D309455E30C /* Paper.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = Paper.podspec; path = ../../Paper.podspec; sourceTree = "<group>"; };
 		6003F58A195388D20070C39A /* Paper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Paper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6003F58D195388D20070C39A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		6003F58F195388D20070C39A /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };

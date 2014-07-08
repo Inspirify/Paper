@@ -40,4 +40,5 @@ Pod::Spec.new do |s|
   # s.frameworks = 'UIKit', 'MapKit'
   # s.dependency 'AFNetworking', '~> 2.3'
   s.dependency "UIKit+Material", '~> 0.1.1'
+  s.dependency "PureLayout", '~> 1.0.1'
 end

@@ -17,3 +17,6 @@ typedef BOOL (^PaperTextFieldValidationBlock)(NSString *, NSString **);
 @property (strong, nonatomic) PaperTextFieldValidationBlock validationBlock;
 
 @end
+
+extern PaperTextFieldValidationBlock PaperTextFieldEmailValidator;
+extern PaperTextFieldValidationBlock PaperTextFieldNumberValidator;

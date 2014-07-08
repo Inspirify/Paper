@@ -9,14 +9,15 @@
 #import "PaperTextField.h"
 #import <UIKit+Material/UIFont+Material.h>
 #import <UIKit+Material/UIColor+Material.h>
+#import <PureLayout/PureLayout.h>
 
+#define kDefaultFloatingLabelFont [UIFont robotoMediumFontOfSize:12.f]
 #define kDefaultTextFont [UIFont robotoMediumFontOfSize:18.f]
 #define kDefaultLabelFont  [UIFont robotoFontOfSize:18.f]
 #define kDefaultInactiveColor [UIColor colorWithWhite:0.0f alpha:0.54]
 #define kDefaultActiveColor [UIColor primaryColorForGroup:@"blue" alpha:1.f]
 #define kDefaultErrorColor [UIColor primaryColorForGroup:@"red" alpha:1.f]
 #define kDefaultLineHeight  22.f
-//[UIFont preferredFontForStyle:MDTextStyleCaption]
 #define kDefaultLabelTextColor [UIColor colorWithWhite:0.0f alpha:0.54]
 
 @interface PaperTextField ()
@@ -24,11 +25,12 @@
 @property (strong, nonatomic) UILabel *label;
 @property (strong, nonatomic) UIFont *labelFont;
 @property (strong, nonatomic) UIColor *labelTextColor;
-@property (strong, nonatomic) UIView *bottomBorder;
 @property (strong, nonatomic) UIView *activeBorder;
-@property (strong, nonatomic) UIView *disabledBorder;
 
 @property (assign, nonatomic) BOOL floating;
+@property (assign, nonatomic) BOOL active;
+@property (assign, nonatomic) BOOL hasError;
+@property (strong, nonatomic) NSString *errorMessage;
 
 @end
 
@@ -45,62 +47,45 @@
         // placeholder label
         _labelFont = kDefaultLabelFont;
         _labelTextColor = kDefaultLabelTextColor;
-        _label = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(frame), CGRectGetHeight(frame))];
+        _label = [[UILabel alloc] initWithFrame:CGRectZero];
         _label.font = _labelFont;
         _label.textColor = _labelTextColor;
         _label.textAlignment = NSTextAlignmentLeft;
         _label.numberOfLines = 1;
         _label.layer.masksToBounds = NO;
         [self addSubview:_label];
-        
-        // bottom border
-        _bottomBorder = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(_label.frame) - 1, CGRectGetWidth(self.bounds), 1)];
-        _bottomBorder.backgroundColor = kDefaultInactiveColor;
-        [self addSubview:_bottomBorder];
-
-        // disabled border
-        _disabledBorder = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(_label.frame) - 1, CGRectGetWidth(self.bounds), 1)];
-//        _disabledBorder.backgroundColor = kDefaultInactiveColor;
-        _disabledBorder.hidden = YES;
-
-        CAShapeLayer *_border = [CAShapeLayer layer];
-        _border.strokeColor = [kDefaultInactiveColor CGColor];
-        _border.fillColor = nil;
-        _border.lineDashPattern = @[@4, @2];
-        _border.path = [UIBezierPath bezierPathWithRect:self.bounds].CGPath;
-        _border.frame = self.bounds;
-        [_disabledBorder.layer addSublayer:_border];
-        [self addSubview:_disabledBorder];
 
         // active border
-        _activeBorder = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(_label.frame) - 2, CGRectGetWidth(self.bounds), 2)];
+        _activeBorder = [[UIView alloc] initWithFrame:CGRectZero];
         _activeBorder.backgroundColor = kDefaultActiveColor;
         _activeBorder.layer.opacity = 0.0f;
         [self addSubview:_activeBorder];
+        
+        // auto layout constrains
+        [_label autoAlignAxis:ALAxisHorizontal toSameAxisOfView:self];
+        [_label autoPinEdge:ALEdgeLeft toEdge:ALEdgeLeft ofView:self];
+        [_label autoMatchDimension:ALDimensionWidth toDimension:ALDimensionWidth ofView:self];
+        [_label autoMatchDimension:ALDimensionHeight toDimension:ALDimensionHeight ofView:self];
+
+        [_activeBorder autoPinEdge:ALEdgeBottom toEdge:ALEdgeBottom ofView:self];
+        [_activeBorder autoPinEdge:ALEdgeLeft toEdge:ALEdgeLeft ofView:self];
+        [_activeBorder autoPinEdge:ALEdgeRight toEdge:ALEdgeRight ofView:self];
+        [_activeBorder autoSetDimension:ALDimensionHeight toSize:2.f];
+        
+        // monitor text changes
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(textDidChange:) name:UITextFieldTextDidChangeNotification object:self];
     }
     return self;
 }
 
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect
+- (void)dealloc
 {
-    // Drawing code
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UITextFieldTextDidChangeNotification object:self];
 }
-*/
 
 - (void)setPlaceholder:(NSString *)placeholder
 {
     [_label setText:placeholder];
-}
-
-- (void)setEnabled:(BOOL)enabled
-{
-    [super setEnabled:enabled];
-    
-    _disabledBorder.hidden = enabled;
-    _bottomBorder.hidden = !enabled;
 }
 
 - (BOOL)becomeFirstResponder
@@ -114,13 +99,17 @@
                 self.floating = YES;
             }
         } else {
+            // change placeholder color
+            _label.textColor = kDefaultActiveColor;
+
             // simply hide the label
             _label.layer.opacity = 0.f;
         }
-        
+
         // show active border
         [self showActiveBorder];
     }
+    _active = flag;
     return flag;
 }
 
@@ -135,28 +124,90 @@
                 self.floating = NO;
             }
         } else {
-            _label.layer.opacity = 1.f;
+            if (self.text.length == 0) {
+                _label.layer.opacity = 1.f;
+            }
         }
+        
+        // change placeholder color
+        _label.textColor = kDefaultInactiveColor;
         
         // show inactive border
         [self showInactiveBorder];
         
         // validate text
-        if (self.validationBlock) {
-            NSString *message = nil;
-            if (!self.validationBlock(self.text, &message)) {
-                // TODO: show error color
-            }
-        }
+        [self validate];
     }
+    _active = flag;
     return flag;
 }
 
+
+- (void)drawRect:(CGRect)rect
+{
+    [super drawRect:rect];
+    
+    // draw border layer
+    UIColor *borderColor = _hasError ? kDefaultErrorColor : kDefaultInactiveColor;
+    CGRect textRect = [self textRectForBounds:rect];
+    CGContextRef context = UIGraphicsGetCurrentContext();
+
+    CGPoint borderLines[2] = {
+        CGPointMake(0, CGRectGetHeight(textRect) - 1),
+        CGPointMake(CGRectGetWidth(textRect), CGRectGetHeight(textRect) - 1)
+    };
+    if (self.enabled) {
+        
+        CGContextBeginPath(context);
+        CGContextAddLines(context, borderLines, 2);
+        CGContextSetLineWidth(context, 1.0f);
+        CGContextSetStrokeColorWithColor(context, [borderColor CGColor]);
+        CGContextStrokePath(context);
+        
+    } else {
+
+        CGContextBeginPath(context);
+        CGContextAddLines(context, borderLines, 2);
+        CGContextSetLineWidth(context, 1.0f);
+        CGFloat dashPattern[2] = {2, 4};
+        CGContextSetLineDash(context, 0, dashPattern, 2);
+        CGContextSetStrokeColorWithColor(context, [borderColor CGColor]);
+        CGContextStrokePath(context);
+
+    }
+}
+
 #pragma mark - Private Method
+
+- (void)textDidChange:(NSNotification *)notif
+{
+    [self validate];
+}
+
+- (void)validate
+{
+    if (self.validationBlock) {
+        NSString *message = nil;
+        BOOL isValid = self.validationBlock(self.text, &message);
+        if (!isValid) {
+            _hasError = YES;
+            _errorMessage = message;
+            self.labelTextColor = kDefaultErrorColor;
+            self.activeBorder.backgroundColor = kDefaultErrorColor;
+            [self setNeedsDisplay];
+        } else {
+            _hasError = NO;
+            _errorMessage = nil;
+            self.labelTextColor = kDefaultActiveColor;
+            self.activeBorder.backgroundColor = kDefaultActiveColor;
+            [self setNeedsDisplay];
+        }
+    }
+}
+
 - (void)showActiveBorder
 {
     _activeBorder.layer.transform = CATransform3DMakeScale(0.01f, 1.0f, 1);
-//    .frame = CGRectMake(CGRectGetMidX(self.bounds), CGRectGetHeight(self.bounds) - 2, 0, 2);
     _activeBorder.layer.opacity = 1.0f;
     
     [CATransaction begin];
@@ -236,7 +287,6 @@
     CATransform3D fromTransform = CATransform3DMakeScale(0.5f, 0.5f, 1);
     fromTransform = CATransform3DTranslate(fromTransform, -CGRectGetWidth(_label.frame)/2.f, -CGRectGetHeight(_label.frame), 0);
     CATransform3D toTransform = CATransform3DMakeScale(1.0f, 1.0f, 1);
-//    transform = CATransform3DTranslate(transform, CGRectGetWidth(_label.frame)/2.f, CGRectGetHeight(_label.frame)/2.f, 0);
     anim2.fromValue = [NSValue valueWithCATransform3D:fromTransform];
     anim2.toValue = [NSValue valueWithCATransform3D:toTransform];
     anim2.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
@@ -252,3 +302,26 @@
     [CATransaction commit];
 }
 @end
+
+PaperTextFieldValidationBlock PaperTextFieldEmailValidator = ^BOOL(NSString *text, NSString **message) {
+    NSString *emailRegex = @"[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}";
+    NSPredicate *emailTest = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", emailRegex];
+    
+    BOOL isValid = [emailTest evaluateWithObject:text];
+    if (!isValid && message) {
+        *message = NSLocalizedString(@"Invalid Email Address", nil);
+    }
+    return isValid;
+};
+
+PaperTextFieldValidationBlock PaperTextFieldNumberValidator = ^BOOL(NSString *text, NSString **message) {
+    NSString *numRegex = @"[0-9.+-]+";
+    NSPredicate *numTest = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", numRegex];
+    
+    BOOL isValid = [numTest evaluateWithObject:text];
+    if (!isValid && message) {
+        *message = NSLocalizedString(@"Invalid Number", nil);
+    }
+    return isValid;
+};
+
