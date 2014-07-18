@@ -5,11 +5,11 @@
 [![License](https://img.shields.io/cocoapods/l/Paper.svg?style=flat)](http://cocoadocs.org/docsets/Paper)
 [![Platform](https://img.shields.io/cocoapods/p/Paper.svg?style=flat)](http://cocoadocs.org/docsets/Paper)
 
+iOS UI components for [Material Design](http://www.google.com/design/spec/material-design/introduction.html).
+
 ## Usage
 
 To run the example project, clone the repo, and run `pod install` from the Example directory first.
-
-## Requirements
 
 ## Installation
 
@@ -17,6 +17,12 @@ Paper is available through [CocoaPods](http://cocoapods.org). To install
 it, simply add the following line to your Podfile:
 
     pod "Paper"
+
+## Screenshots
+
+### PaperTextField
+![Primary Colors](https://raw.githubusercontent.com/Inspirify/Paper/master/Screenshots/PaperTextField.gif)
+
 
 ## Author
 
